@@ -3,12 +3,12 @@ import sys,os
 import time
 import re 
 from statistics import mean , stdev
-from _winapi import ReadFile
 import xlsxwriter
 from openpyxl import load_workbook
 import math
 import shutil
 from numpy import number
+from datetime import datetime
 import pandas as pd
 
 class DataAnalyzer:
@@ -27,56 +27,85 @@ class DataAnalyzer:
         return fileArray
     
     def getAbsolutePath(self):
-        absFile=self.filepath + '\\' +self.name
+        absFile=self.filepath + '/' +self.name
         return absFile
+    
+    def round_time(self,key):
+        minute = int(key.split(":")[-2])
+        date = int(key.split(":")[0].split("-")[0])
+        hour = int(key.split(":")[0].split("-")[1])
+        
+        seconds = round(float(key.split(":")[-1])*2)/2.0
+        if seconds>=60.0:
+            minute = minute +1
+            seconds = 0.0
+        
+        if minute>=60.0:
+            hour = hour+1
+            minute= 0.0
+            
+        if hour >=24:
+            date = date +1
+            if date==20190931:
+                date=20191001
+            elif date==20190832:
+                date=20190901
+            elif date==20190732:
+                date=20190801
+            hour=0.0
+                    
+        if seconds < 10.0:
+            tmp = str('%02d' % int(str(seconds).split(".")[0])) + ':'+str(seconds).split(".")[1]
+            seconds =tmp
+        return (str(date)+"-"+str('%02d' % hour)+":"+str('%02d' % minute)+":"+str(seconds) )
+            
+            
     
     def readFile(self):
         file = open(self.getAbsolutePath(), "r")
         fileStr = file.read()
         numarray=[]
-        time=[]
+        timearray=[]
         count=0
         for string in fileStr.splitlines():
-            count+=1
-            numbers = string.split(',')
-            samet=0.0
-            if numbers[2]=="\"bits/sec\"" or numbers[2]=="\"Kbits/sec\"":
-                samet = round(float(numbers[1].replace("\"",""))*0.001,2)
-            elif numbers[2]=="\"Mbits/sec\"":
-                samet= round(float(numbers[1].replace("\"","")),2)
-            else:
-                print(str(count)+"-NONE")
-                continue
-            try:
-                numarray.append(samet)
-                time.append(numbers[0])
-            except:
-                print(str(count)+"-SKIPPED")
-        return numarray, time
+            
+            if "/sec" in string:
+                try:
+                    number  = string.split(',')[1].split(' ')[0]
+                    tmpval  = string.split(',')[1].split(' ')[1]
+                    timeval = string.split(',')[0].split(' ')[1]
+                    if tmpval == "Mbits/sec":
+                        numarray.append(round(float(number),2))
+                        timearray.append(self.round_time(timeval))
+                    elif tmpval == "Kbits/sec":
+                        numarray.append(round(float(number)*0.001,2))
+                        timearray.append(self.round_time(timeval))
+                    elif tmpval == "bits/sec":
+                        numarray.append(round(float(number)*0.001,2))
+                        timearray.append(self.round_time(timeval))
+                except:
+                    print(count)
+                    print("EXCEPTION")
+            count+=1    
+                
+        return numarray, timearray
 
+now = datetime. now()
+current_time = now. strftime("%H:%M:%S")
+print("Current Time =", current_time)
     
-    
 
-filename="C:\\Users\\sametyildiz\\Google Drive\\PhD\\Backup Data\\CSV files"
-fsothroughput = DataAnalyzer(filename,"fsothroughput.csv")
+filename="/home/sy/Backup Data"
+fsothroughput = DataAnalyzer(filename,"FSO_before_20191027.txt")
+rfthroughput = DataAnalyzer(filename,"RF_before_20191027.txt")
 
 
-"""df = pd.read_csv(fsothroughput.getAbsolutePath())
-i=0
-fsoarray=[]
-while i < len(df.fso):
-    num = 0.0
-    if df.fsopacket[i] =="Kbits/sec":
-        num=num*0.001
-        fsoarray.append(round(num,2))
-    elif  df.fsopacket[i] =="bits/sec": 
-        num=num*0.001
-        fsoarray.append(round(num,2))
-    elif  df.fsopacket[i] =="Mbits/sec": 
-        num=num*0.001
-        fsoarray.append(round(num,2))
-    
-        
-"""
-fsoarray , time = fsothroughput.readFile()
-print(fsoarray)
+throughput_fso , time_fso = fsothroughput.readFile()
+thoruhgput_rf , time_rf = rfthroughput.readFile()
+
+now = datetime. now()
+current_time = now. strftime("%H:%M:%S")
+print("Current Time =", current_time)
+
+
+
