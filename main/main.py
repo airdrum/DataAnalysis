@@ -9,18 +9,21 @@ import math
 import shutil
 from numpy import number
 import pandas as pd
-import dill
+#import dill
 import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib
 from datetime import datetime, timedelta
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 import datetime as dt
+from scipy.interpolate import interp1d
 # Python code to illustrate 
 # inserting data in MongoDB 
-from pymongo import MongoClient 
+#from pymongo import MongoClient 
   
 import sys
+from cmath import nan
 
 class Tee(object):
     def __init__(self, *files):
@@ -156,7 +159,7 @@ class DataAnalyzer:
             count+=1    
                 
         return numarray, timearray
-def pushToDatabaset(rf):
+"""def pushToDatabaset(rf):
     conn = MongoClient('localhost',27017)
   
     # database 
@@ -175,7 +178,7 @@ def pushToDatabaset(rf):
                 "throughput":throughput
                 } 
         rec_id1 = collection.insert_one(dbobject) 
-        print("Data inserted with record ids",rec_id1) 
+        print("Data inserted with record ids",rec_id1) """
         
 def compare_time_throughput(time_rf,time_fso,throughput_rf,throughput_fso):
     i=0
@@ -306,7 +309,7 @@ def printKeyInterval(timeval, key):
   
 
             
-filename="/root/git/DataAnalysis/main"
+filename="E:\\PhD\\"
 """f = open('out_separate_rf.txt', 'w')
 original = sys.stdout
 sys.stdout = Tee(sys.stdout, f)"""
@@ -327,11 +330,104 @@ f=0
         
 printFso(timeval, rf, fso)"""
 
-time_str = DataAnalyzer(filename,"final_combined.txt")
+time_str = DataAnalyzer(filename,"samet.txt")
 timeval = time_str.getFileStr().splitlines()
-printKeyInterval(timeval, "NORF,NOFSO,NOWEATHER")
+timearray=[]
+rf=[]
+fso=[]
+for i in timeval:
+    timearray.append(i.split(',')[0])
+    try:
+        rf.append(float(i.split(',')[1]))
+    except:
+        rf.append(None)
+    
+    try:
+        fso.append(float(i.split(',')[2]))
+    except:
+        fso.append(None)
+
+
+c = 0
+
+
 #printWeatherline(weather_data)
 #rfthroughput.printFile()
+def getNoneElementsOneArray(fso):
+    counter=0
+    none_counter=0
+    index_list = []
+    last_remaining_index_old = 0
+    while counter < len(fso):
+        if fso[counter]==None:
+            
+            none_counter +=1
+            if none_counter ==1:
+                last_remaining_index_old = counter
+        else:
+            if none_counter >1:
+                index_list.append([last_remaining_index_old,none_counter])
+            none_counter=0
+        counter+=1
+    return index_list
 
-  
 
+def getNoneElementsTwoArray(fso,rf):
+    counter=0
+    none_counter=0
+    index_list = []
+    last_remaining_index_old = 0
+    while counter < len(fso):
+        if fso[counter]==None and rf[counter]==None:
+            
+            none_counter +=1
+            if none_counter ==1:
+                last_remaining_index_old = counter
+        else:
+            if none_counter >1:
+                index_list.append([last_remaining_index_old,none_counter])
+            none_counter=0
+        counter+=1
+    return index_list
+
+def printPrevious(noneElements,main_array):
+    
+    out_array = main_array
+    timearray=[]
+    count = 0
+    index_end=0
+    index_count=0
+    k=0
+    i=0
+    while i <len(main_array):
+            
+        if k <len(noneElements):
+            index_end = noneElements[k][0]
+            index_count = noneElements[k][1]
+        
+            
+            
+        timeval = main_array[i].split(',')[0]
+        copy_item = ','.join(main_array[i].split(',')[1:])
+        if i < index_end:
+        #timearray.append(timeval+','+copy_item)
+            print(timeval+','+copy_item)
+            i+=1
+            
+        else:
+            #print(timeval+','+copy_item)
+            tmp_count = index_count
+            while tmp_count >0:
+                print(main_array[i].split(',')[0] +','+ ','.join(main_array[index_end-tmp_count].split(',')[1:]) )
+                tmp_count-=1
+                i+=1
+            
+            k+=1
+        
+        
+    
+        
+        
+elements = getNoneElementsTwoArray(fso,rf)
+print(elements)
+printPrevious(elements,timeval)
